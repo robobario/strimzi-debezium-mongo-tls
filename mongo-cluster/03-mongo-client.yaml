@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-client
+  namespace: mongo-tls
+  labels:
+    app: mongo-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-client
+  template:
+    metadata:
+      labels:
+        app: mongo-client
+    spec:
+      containers:
+      - name: mongo-client
+        command: ["/bin/sleep", "1000000"]
+        image: mongo:latest
+        volumeMounts:
+          - mountPath: "/etc/certs"
+            name: certificates
+            readOnly: true
+      volumes:
+        - name: certificates
+          secret:
+            secretName: certificates

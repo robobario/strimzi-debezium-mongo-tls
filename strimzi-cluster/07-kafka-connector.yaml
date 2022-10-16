@@ -1,0 +1,17 @@
+apiVersion: "kafka.strimzi.io/v1beta2"
+kind: "KafkaConnector"
+metadata:
+  name: "example-connector"
+  labels:
+    strimzi.io/cluster: my-connect-cluster
+spec:
+  class: io.debezium.connector.mongodb.MongoDbConnector
+  tasksMax: 1
+  config:
+    mongodb.hosts: mongotest:27017
+    mongodb.name: mongo
+    mongodb.user: root
+    mongodb.password: secret
+    mongodb.ssl.enabled: true
+    topic.prefix: example
+    

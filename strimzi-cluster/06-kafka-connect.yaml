@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connect-config
+data:
+  tls-enabled: "false"
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: my-connect-cluster
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  replicas: 1
+  bootstrapServers: my-cluster-kafka-bootstrap:9092
+  externalConfiguration:
+    env:
+      - name: KAFKA_CONNECT_TLS
+        valueFrom:
+          configMapKeyRef:
+            name: connect-config 
+            key: tls-enabled
+  config:
+    group.id: my-connect-cluster
+    offset.storage.topic: my-connect-cluster-offsets
+    config.storage.topic: my-connect-cluster-configs
+    status.storage.topic: my-connect-cluster-status
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: true
+    value.converter.schemas.enable: true
+    config.storage.replication.factor: 1
+    offset.storage.replication.factor: 1
+    status.storage.replication.factor: 1
+  jvmOptions:
+    javaSystemProperties:
+      - name: javax.net.ssl.trustStore
+        value: /opt/kafka/external-configuration/certificates/mongodb-client.jks
+      - name: javax.net.ssl.trustStorePassword
+        value: "123456"
+      - name: javax.net.ssl.keyStore
+        value: /opt/kafka/external-configuration/certificates/mongodb-client.jks
+      - name: javax.net.ssl.keyStorePassword
+        value: "123456"
+  externalConfiguration:
+    volumes:
+      - name: certificates
+        secret:
+          secretName: certificates
+  build:
+    output:
+      type: docker
+      image: 192.168.49.2:5000/my-org/my-connect-cluster:latest
+    plugins: 
+      - name: debezium-connector-mongodb
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-mongodb/2.0.0.Final/debezium-connector-mongodb-2.0.0.Final-plugin.tar.gz
+            sha512sum: 1bd4e317ffca7ecc0800c131d5055f9250a8c6ba1a700f7f4431ce41863d63bc141a4c14de699366b7df7888e105b1584baf04ddc0ae6a48a3789b590a706ba9 

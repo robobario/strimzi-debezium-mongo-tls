@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: mongo-tls
+  labels:
+    app: mongo
+    app.kubernetes.io/name: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+        app.kubernetes.io/name: mongo
+    spec:
+      initContainers:
+      - name: change-keyfile-ownership
+        image: alpine:3
+        command:
+        - sh
+        - -c
+        - cp /etc/certs/mongodb-keyfile.txt /etc/keyfile/mongodb-keyfile.txt && chown 999:999 /etc/keyfile/mongodb-keyfile.txt && chmod 600 /etc/keyfile/mongodb-keyfile.txt
+        volumeMounts:
+        - mountPath: "/etc/certs"
+          name: certificates
+        - mountPath: "/etc/keyfile"
+          name: keyfile
+          readOnly: false
+      containers:
+      - name: mongo
+        args: ["--tlsMode", "requireTLS", "--replSet", "rs0", "--keyFile", "/etc/keyfile/mongodb-keyfile.txt",  "--tlsCAFile", "/etc/certs/mongodb-CA.pem", "--tlsCertificateKeyFile", "/etc/certs/mongodb-server.pem"]
+        image: mongo:latest
+        ports:
+        - name: mongo
+          containerPort: 27017
+          protocol: TCP
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: root
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: secret
+        - name: MONGO_INITDB_DATABASE
+          value: example
+        volumeMounts:
+          - mountPath: "/etc/certs"
+            name: certificates
+            readOnly: true
+          - mountPath: "/etc/keyfile"
+            name: keyfile
+            readOnly: false
+      volumes:
+        - name: certificates
+          secret:
+            secretName: certificates
+        - name: keyfile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongotest
+  namespace: mongo-tls
+spec:
+  selector:
+    app.kubernetes.io/name: mongo
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
