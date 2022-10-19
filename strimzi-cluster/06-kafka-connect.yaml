@@ -14,13 +14,6 @@ metadata:
 spec:
   replicas: 1
   bootstrapServers: my-cluster-kafka-bootstrap:9092
-  externalConfiguration:
-    env:
-      - name: KAFKA_CONNECT_TLS
-        valueFrom:
-          configMapKeyRef:
-            name: connect-config 
-            key: tls-enabled
   config:
     group.id: my-connect-cluster
     offset.storage.topic: my-connect-cluster-offsets
